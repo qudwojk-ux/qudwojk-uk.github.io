@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#080c18">
+<title>뉴스브리핑</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080c18;--bg2:#0d1224;--bg3:#111827;
+  --border:#1e3a5f;--text:#f0ece0;--text2:#8baacf;
+  --accent:#e85d04;--accent2:#f48c06;
+  --blue:#3b82f6;--green:#22c55e;
+  --green-bg:#091a0b;--green-border:#1a4020;--green-text:#86efac;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Noto Sans KR','Malgun Gothic',sans-serif;overflow-x:hidden}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:32px 24px;width:100%;max-width:400px}
+.modal-logo{display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.modal-dot{width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.modal-logotext{font-family:'Noto Serif KR',serif;font-size:24px;font-weight:900;color:var(--text)}
+.modal-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px}
+.modal-desc{font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:20px}
+.modal-desc a{color:var(--blue);text-decoration:none}
+.modal-label{font-size:12px;color:var(--text2);margin-bottom:6px;display:block}
+.modal-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:12px 14px;outline:none;font-family:monospace;margin-bottom:16px;transition:border-color .2s}
+.modal-input:focus{border-color:var(--blue)}
+.modal-btn{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;letter-spacing:-.3px}
+.modal-note{font-size:11px;color:#4b6a8a;text-align:center;margin-top:10px;line-height:1.6}
+
+/* ── HEADER ── */
+header{position:sticky;top:0;z-index:100;background:linear-gradient(135deg,#080c18,#0d1224);border-bottom:1px solid var(--border);box-shadow:0 4px 24px rgba(0,0,0,.5)}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;gap:10px}
+.hdr-left{min-width:0}
+.logo-row{display:flex;align-items:center;gap:7px}
+.logo-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);animation:pulse 2s ease-in-out infinite;flex-shrink:0}
+.logo-text{font-family:'Noto Serif KR',serif;font-size:21px;font-weight:900;color:var(--text);letter-spacing:-1px}
+.ts{font-size:10px;color:var(--text2);margin-top:3px;margin-left:16px;white-space:nowrap}
+.hdr-right{display:flex;gap:7px;flex-shrink:0}
+.icon-btn{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text2);padding:9px 11px;font-size:15px;cursor:pointer;transition:all .2s;position:relative;display:flex;align-items:center;gap:4px}
+.icon-btn:active{background:#162034}
+.badge{position:absolute;top:-5px;right:-5px;background:var(--accent);color:#fff;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center}
+.fetch-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Noto Sans KR',sans-serif;box-shadow:0 4px 12px rgba(232,93,4,.4);transition:all .2s;display:flex;align-items:center;gap:6px}
+.fetch-btn:active{opacity:.8;transform:scale(.97)}
+.fetch-btn:disabled{opacity:.6;cursor:not-allowed}
+
+/* ── TABS ── */
+.tab-bar{display:flex;gap:5px;overflow-x:auto;padding:10px 16px;scrollbar-width:none;background:var(--bg2);border-bottom:1px solid #0f1e30}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s;font-family:'Noto Sans KR',sans-serif}
+.tab.active{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 0 14px rgba(59,130,246,.4)}
+.tab-icon{font-size:13px}
+
+/* ── MAIN ── */
+main{padding:14px;display:flex;flex-direction:column;gap:18px;padding-bottom:80px}
+
+/* ── NEWS CARDS ── */
+.news-grid{display:flex;flex-direction:column;gap:9px}
+.news-card{display:flex;gap:11px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:13px;text-decoration:none;color:inherit;transition:all .2s;border-left:3px solid transparent}
+.news-card:active{background:#162034;border-left-color:var(--blue)}
+.card-rank{font-size:19px;font-weight:900;color:#1e3a5f;font-family:Georgia,serif;min-width:26px;line-height:1.2;flex-shrink:0}
+.card-body{flex:1;min-width:0}
+.card-title{font-family:'Noto Serif KR',serif;font-size:14px;font-weight:700;line-height:1.55;color:var(--text);margin-bottom:5px;cursor:pointer}
+.card-summary{font-size:11px;color:var(--text2);line-height:1.55;margin-bottom:7px}
+.card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-source{font-size:10px;color:#4b6a8a;font-weight:700;background:var(--bg);padding:2px 7px;border-radius:4px;flex-shrink:0}
+.clip-btn{display:flex;align-items:center;gap:3px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text2);padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:'Noto Sans KR',sans-serif;flex-shrink:0}
+.clip-btn:active{background:var(--blue);border-color:var(--blue);color:#fff}
+.clip-btn.clipped{background:#1e3a5f;border-color:var(--blue);color:var(--blue)}
+
+/* ── SKELETON ── */
+.skel-card{background:var(--bg3);border:1px solid #1a2840;border-radius:10px;padding:13px;display:flex;flex-direction:column;gap:9px}
+.skel{border-radius:4px;animation:shimmer 1.5s ease-in-out infinite}
+.sk1{height:15px;background:#1e3a5f;width:82%}
+.sk2{height:12px;background:#152840;width:62%}
+.sk3{height:11px;background:#0f1e30;width:28%}
+
+/* ── EMPTY / ERROR ── */
+.empty-box{text-align:center;padding:46px 20px;color:var(--text2)}
+.empty-icon{font-size:38px;margin-bottom:10px}
+.empty-text{font-size:13px}
+.error-box{display:flex;align-items:center;gap:10px;padding:14px;background:#180e0e;border:1px solid #5a1a1a;border-radius:10px}
+.error-text{color:#e87d7d;font-size:13px;line-height:1.5}
+
+/* ── DAEGU SECTION ── */
+.daegu-section{background:linear-gradient(135deg,var(--green-bg),#0c1a0e);border:1px solid var(--green-border);border-radius:14px;padding:16px}
+.daegu-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.daegu-title-row{display:flex;align-items:center;gap:8px}
+.daegu-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+.daegu-title{font-family:'Noto Serif KR',serif;font-size:17px;font-weight:900;color:var(--green-text)}
+.daegu-refresh{background:#1a4020;border:1px solid #2d6040;border-radius:8px;color:var(--green-text);padding:7px 11px;font-size:15px;cursor:pointer;transition:all .2s}
+.daegu-refresh:active{background:#1f4d25}
+.daegu-refresh:disabled{opacity:.5;cursor:not-allowed}
+.daegu-grid{display:flex;flex-direction:column;gap:8px}
+.daegu-card{display:flex;gap:10px;background:#0d2010;border:1px solid var(--green-border);border-radius:8px;padding:11px;text-decoration:none;color:inherit;transition:all .2s;border-left:3px solid transparent}
+.daegu-card:active{background:#112815;border-left-color:var(--green)}
+.daegu-rank{font-size:12px;font-weight:900;color:var(--green);min-width:16px;padding-top:2px;font-family:Georgia,serif;flex-shrink:0}
+.daegu-body{flex:1;min-width:0}
+.daegu-card-title{font-family:'Noto Serif KR',serif;font-size:13px;font-weight:700;line-height:1.55;color:#dcfce7;margin-bottom:4px;cursor:pointer}
+.daegu-card-summary{font-size:11px;color:#4ade80;line-height:1.5;opacity:.8;margin-bottom:5px}
+.daegu-footer{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.daegu-source{font-size:10px;color:#166534;font-weight:700;background:#052e16;padding:2px 6px;border-radius:3px;flex-shrink:0}
+.daegu-clip{background:transparent;border:1px solid #2d6040;border-radius:5px;color:#4ade80;padding:3px 8px;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:'Noto Sans KR',sans-serif}
+.daegu-clip:active{background:#1a4020}
+
+/* ── SCRAP DRAWER ── */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none}
+.drawer-overlay.open{display:block}
+.drawer{position:fixed;top:0;right:-105%;bottom:0;width:90%;max-width:370px;background:var(--bg2);border-left:1px solid var(--border);z-index:201;transition:right .32s cubic-bezier(.4,0,.2,1);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.drawer.open{right:0}
+.drawer-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1}
+.drawer-title{font-family:'Noto Serif KR',serif;font-size:17px;font-weight:900;color:var(--text)}
+.drawer-close{background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text2);padding:6px 10px;font-size:15px;cursor:pointer}
+.drawer-body{padding:14px;display:flex;flex-direction:column;gap:10px}
+.scrap-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:13px}
+.scrap-item-title{font-family:'Noto Serif KR',serif;font-size:13px;font-weight:700;color:var(--text);line-height:1.5;margin-bottom:5px}
+.scrap-item-summary{font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:6px}
+.scrap-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.scrap-source{font-size:10px;color:#4b6a8a;font-weight:700}
+.scrap-date{font-size:10px;color:#4b6a8a}
+.scrap-actions{display:flex;gap:6px}
+.sa-btn{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text2);padding:7px 4px;font-size:11px;font-weight:600;cursor:pointer;text-align:center;font-family:'Noto Sans KR',sans-serif;transition:all .2s}
+.sa-btn:active{background:#162034}
+.sa-del{background:#180e0e;border-color:#5a1a1a;color:#e87d7d}
+.clear-btn{background:#180e0e;border:1px solid #5a1a1a;border-radius:8px;color:#e87d7d;padding:11px;font-size:13px;font-weight:700;cursor:pointer;width:100%;font-family:'Noto Sans KR',sans-serif;margin-top:4px}
+.drawer-empty{text-align:center;padding:60px 20px;color:var(--text2)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a2840;border:1px solid var(--blue);border-radius:20px;padding:10px 20px;font-size:12px;color:var(--text);z-index:9999;opacity:0;transition:opacity .3s;white-space:nowrap;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.toast.show{opacity:1}
+
+/* ── SETTINGS FAB ── */
+.fab{position:fixed;bottom:20px;right:16px;width:42px;height:42px;background:var(--bg2);border:1px solid var(--border);border-radius:50%;color:var(--text2);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:50;transition:all .2s}
+.fab:active{transform:scale(.94)}
+
+/* ── ANIMS ── */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes shimmer{0%,100%{opacity:.4}50%{opacity:.75}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
+.spinner-g{display:inline-block;width:13px;height:13px;border:2px solid rgba(134,239,172,.3);border-top-color:#86efac;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
+</style>
+</head>
+<body>
+
+<!-- ══ API KEY MODAL ══ -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal-box">
+    <div class="modal-logo">
+      <div class="modal-dot"></div>
+      <span class="modal-logotext">뉴스브리핑</span>
+    </div>
+    <div class="modal-title">🔑 Anthropic API 키 설정</div>
+    <div class="modal-desc">
+      AI가 실시간으로 주요 언론 헤드라인을 수집합니다.<br>
+      API 키 발급 → <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a><br><br>
+      입력한 키는 <strong>이 기기에만</strong> 저장되며 외부로 전송되지 않습니다.
+    </div>
+    <label class="modal-label">Anthropic API Key</label>
+    <input type="password" class="modal-input" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off">
+    <button class="modal-btn" onclick="saveApiKey()">저장하고 시작하기 →</button>
+    <div class="modal-note">※ API 사용 비용은 Anthropic 계정에서 청구됩니다</div>
+  </div>
+</div>
+
+<!-- ══ SCRAP DRAWER ══ -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="scrapDrawer">
+  <div class="drawer-hdr">
+    <span class="drawer-title">📌 스크랩 보관함</span>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div class="toast" id="toast"></div>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="logo-row">
+        <div class="logo-dot"></div>
+        <span class="logo-text">뉴스브리핑</span>
+      </div>
+      <div class="ts" id="tsEl"></div>
+    </div>
+    <div class="hdr-right">
+      <button class="icon-btn" onclick="openDrawer()" title="스크랩 목록">
+        📌<span class="badge" id="scrapBadge" style="display:none"></span>
+      </button>
+      <button class="fetch-btn" id="fetchAllBtn" onclick="fetchAll()">
+        <span>⚡</span><span>헤드라인 가져오기</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ══ TABS ══ -->
+<div class="tab-bar" id="tabBar"></div>
+
+<!-- ══ MAIN ══ -->
+<main>
+  <div class="news-grid" id="newsContainer">
+    <div class="empty-box"><div class="empty-icon">📰</div><div class="empty-text">버튼을 눌러 최신 뉴스를 불러오세요</div></div>
+  </div>
+
+  <!-- 대구·경북 -->
+  <div class="daegu-section">
+    <div class="daegu-hdr">
+      <div class="daegu-title-row">
+        <div class="daegu-dot"></div>
+        <h2 class="daegu-title">대구 · 경북 뉴스</h2>
+      </div>
+      <button class="daegu-refresh" id="daeguBtn" onclick="fetchDaegu()">🔄</button>
+    </div>
+    <div class="daegu-grid" id="daeguContainer">
+      <div class="empty-box" style="padding:30px 20px">
+        <div class="empty-icon" style="font-size:28px">🏙️</div>
+        <div class="empty-text" style="color:#4ade80;opacity:.7">대구·경북 지역 뉴스를 불러오세요</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Settings FAB -->
+<button class="fab" onclick="showSettings()" title="설정">⚙️</button>
+
+<script>
+// ── STATE ──────────────────────────────────────────────
+const CATS = [
+  {id:'politics', label:'정치', icon:'🏛️', q:'한국 정치 국회 대통령 뉴스 오늘'},
+  {id:'economy',  label:'경제', icon:'📈', q:'한국 경제 증시 금융 물가 뉴스 오늘'},
+  {id:'society',  label:'사회', icon:'🏙️', q:'한국 사회 사건 사고 교육 복지 뉴스 오늘'},
+  {id:'culture',  label:'문화·연예', icon:'🎬', q:'한국 문화 연예 영화 드라마 K팝 뉴스 오늘'},
+  {id:'sports',   label:'스포츠', icon:'⚽', q:'한국 스포츠 야구 KBO 축구 농구 뉴스 오늘'},
+  {id:'world',    label:'국제', icon:'🌐', q:'국제 세계 외교 미국 중국 뉴스 오늘'},
+];
+const DAEGU_Q = '대구 경북 지역 뉴스 오늘 주요';
+const MODEL   = 'claude-sonnet-4-20250514';
+
+let activeTab = 'politics';
+let newsData  = {};         // id → array
+let loadingCats = {};       // id → bool
+let loadingDaegu = false;
+let daeguData = [];
+let apiKey = localStorage.getItem('nbk') || '';
+let scraps = JSON.parse(localStorage.getItem('nbk-scraps') || '[]');
+
+// ── INIT ──────────────────────────────────────────────
+window.onload = () => {
+  if (!apiKey) { document.getElementById('apiModal').style.display = 'flex'; }
+  buildTabs();
+  renderNews();
+  updateBadge();
+};
+
+// ── API KEY ──────────────────────────────────────────
+function saveApiKey() {
+  const v = document.getElementById('apiKeyInput').value.trim();
+  if (!v.startsWith('sk-')) { toast('⚠️ 올바른 API 키를 입력하세요 (sk- 로 시작)'); return; }
+  apiKey = v;
+  localStorage.setItem('nbk', apiKey);
+  document.getElementById('apiModal').style.display = 'none';
+  toast('✅ API 키가 저장되었습니다!');
+}
+function showSettings() {
+  if (confirm('API 키를 변경하시겠습니까?')) {
+    document.getElementById('apiKeyInput').value = apiKey;
+    document.getElementById('apiModal').style.display = 'flex';
+  }
+}
+
+// ── API CALL ─────────────────────────────────────────
+async function callAPI(query) {
+  if (!apiKey) { document.getElementById('apiModal').style.display='flex'; throw new Error('API 키 없음'); }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 1200,
+      tools: [{type:'web_search_20250305', name:'web_search'}],
+      system: `뉴스 수집 전문가입니다. 웹 검색으로 최신 주요 뉴스 5개를 찾아 아래 JSON 형식만 출력하세요. 코드블록 없이 순수 JSON만 반환하세요.
+{"headlines":[{"title":"제목","summary":"2~3줄 요약","source":"언론사명","url":"기사URL"}]}`,
+      messages: [{role:'user', content:`최신 뉴스 5개를 검색해 JSON으로 출력: ${query}`}]
+    })
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(()=>({}));
+    throw new Error(e.error?.message || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+  const m = text.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('응답 파싱 실패');
+  const parsed = JSON.parse(m[0]);
+  return parsed.headlines || [];
+}
+
+// ── FETCH ALL ────────────────────────────────────────
+async function fetchAll() {
+  const btn = document.getElementById('fetchAllBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 불러오는 중...';
+  const now = new Date();
+  document.getElementById('tsEl').textContent = '📅 '+fmt(now)+' 기준';
+  await Promise.allSettled([
+    ...CATS.map(c => fetchCat(c.id)),
+    fetchDaegu()
+  ]);
+  btn.disabled = false;
+  btn.innerHTML = '<span>⚡</span><span>헤드라인 가져오기</span>';
+  toast('✅ 뉴스 업데이트 완료!');
+}
+
+async function fetchCat(id) {
+  const cat = CATS.find(c=>c.id===id);
+  if (!cat || loadingCats[id]) return;
+  loadingCats[id] = true;
+  if (id===activeTab) renderNews();
+  try {
+    const h = await callAPI(cat.q);
+    newsData[id] = h;
+  } catch(e) {
+    newsData[id] = {err: e.message};
+    if (id===activeTab) toast('⚠️ '+e.message);
+  }
+  loadingCats[id] = false;
+  if (id===activeTab) renderNews();
+}
+
+async function fetchDaegu() {
+  if (loadingDaegu) return;
+  loadingDaegu = true;
+  const btn = document.getElementById('daeguBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-g"></span>';
+  renderDaegu(null);
+  try {
+    daeguData = await callAPI(DAEGU_Q);
+    renderDaegu(daeguData);
+  } catch(e) {
+    daeguData = [];
+    renderDaegu([]);
+    toast('⚠️ 대구·경북 뉴스 실패: '+e.message);
+  }
+  loadingDaegu = false;
+  btn.disabled = false;
+  btn.innerHTML = '🔄';
+}
+
+// ── TABS ─────────────────────────────────────────────
+function buildTabs() {
+  document.getElementById('tabBar').innerHTML = CATS.map(c=>`
+    <button class="tab ${c.id===activeTab?'active':''}" onclick="switchTab('${c.id}')">
+      <span class="tab-icon">${c.icon}</span>${c.label}
+    </button>`).join('');
+}
+function switchTab(id) {
+  activeTab = id;
+  buildTabs();
+  renderNews();
+  if (!newsData[id] && !loadingCats[id]) fetchCat(id);
+}
+
+// ── RENDER NEWS ──────────────────────────────────────
+function renderNews() {
+  const el = document.getElementById('newsContainer');
+  const cat = CATS.find(c=>c.id===activeTab);
+  if (loadingCats[activeTab]) {
+    el.innerHTML = [1,2,3,4,5].map(()=>`<div class="skel-card"><div class="skel sk1"></div><div class="skel sk2"></div><div class="skel sk3"></div></div>`).join('');
+    return;
+  }
+  const d = newsData[activeTab];
+  if (!d) {
+    el.innerHTML = `<div class="empty-box"><div class="empty-icon">${cat?.icon||'📰'}</div><div class="empty-text">버튼을 눌러 최신 뉴스를 불러오세요</div></div>`;
+    return;
+  }
+  if (d.err) {
+    el.innerHTML = `<div class="error-box">⚠️ <div class="error-text">뉴스를 불러오지 못했습니다.<br><small>${d.err}</small></div></div>`;
+    return;
+  }
+  el.innerHTML = d.map((item,i)=>{
+    const sc = isScrapped(item);
+    return `<div class="news-card">
+      <div class="card-rank">${pad(i+1)}</div>
+      <div class="card-body">
+        <div class="card-title" onclick="goUrl(${i},'nat')">${esc(item.title)}</div>
+        ${item.summary?`<div class="card-summary">${esc(item.summary)}</div>`:''}
+        <div class="card-footer">
+          ${item.source?`<span class="card-source">${esc(item.source)}</span>`:'<span></span>'}
+          <button class="clip-btn ${sc?'clipped':''}" onclick="doScrap(${i},'nat')">
+            ${sc?'📌 스크랩됨':'📌 스크랩'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDaegu(items) {
+  const el = document.getElementById('daeguContainer');
+  if (items===null) {
+    el.innerHTML = [1,2,3,4].map(()=>`<div class="skel-card" style="background:#0d2010;border-color:#1a4020"><div class="skel sk1" style="background:#1a4020"></div><div class="skel sk2" style="background:#0f2e15"></div></div>`).join('');
+    return;
+  }
+  if (!items.length) {
+    el.innerHTML = `<div class="empty-box" style="padding:30px"><div class="empty-icon" style="font-size:28px">🏙️</div><div class="empty-text" style="color:#4ade80;opacity:.7">뉴스를 불러오지 못했습니다</div></div>`;
+    return;
+  }
+  el.innerHTML = items.map((item,i)=>`
+    <div class="daegu-card">
+      <div class="daegu-rank">${i+1}</div>
+      <div class="daegu-body">
+        <div class="daegu-card-title" onclick="goUrl(${i},'dg')">${esc(item.title)}</div>
+        ${item.summary?`<div class="daegu-card-summary">${esc(item.summary)}</div>`:''}
+        <div class="daegu-footer">
+          ${item.source?`<span class="daegu-source">${esc(item.source)}</span>`:'<span></span>'}
+          <button class="daegu-clip" onclick="doScrap(${i},'dg')">📌 스크랩</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── SCRAP ────────────────────────────────────────────
+function getItem(idx,src) {
+  return src==='dg' ? daeguData[idx] : (newsData[activeTab]||[])[idx];
+}
+function isScrapped(item) {
+  return scraps.some(s=>s.title===item.title);
+}
+function doScrap(idx, src) {
+  const item = getItem(idx,src);
+  if (!item) return;
+  if (!isScrapped(item)) {
+    scraps.unshift({...item, savedAt:new Date().toISOString()});
+    if (scraps.length>100) scraps=scraps.slice(0,100);
+    localStorage.setItem('nbk-scraps', JSON.stringify(scraps));
+    updateBadge();
+    renderNews();
+    renderDaegu(daeguData);
+    toast('📌 스크랩 저장 완료!');
+  }
+  // Always try to share natively
+  const text = `📰 ${item.title}\n\n${item.summary||''}\n\n출처: ${item.source||''}\n${item.url||''}`.trim();
+  if (navigator.share) {
+    navigator.share({ title: item.title, text, url: item.url||location.href }).catch(()=>{});
+  } else {
+    navigator.clipboard?.writeText(text).then(()=>toast('📋 클립보드에 복사되었습니다!'));
+  }
+}
+function shareScrap(idx) {
+  const item = scraps[idx];
+  if (!item) return;
+  const text = `📰 ${item.title}\n\n${item.summary||''}\n\n출처: ${item.source||''}\n${item.url||''}`.trim();
+  if (navigator.share) {
+    navigator.share({title:item.title, text, url:item.url||location.href}).catch(()=>{});
+  } else {
+    navigator.clipboard?.writeText(text).then(()=>toast('📋 복사 완료!'));
+  }
+}
+function deleteScrap(idx) {
+  scraps.splice(idx,1);
+  localStorage.setItem('nbk-scraps',JSON.stringify(scraps));
+  updateBadge();
+  renderDrawer();
+  renderNews();
+}
+function clearScraps() {
+  if (!confirm('스크랩을 전체 삭제하시겠습니까?')) return;
+  scraps=[];
+  localStorage.setItem('nbk-scraps','[]');
+  updateBadge();
+  renderDrawer();
+  renderNews();
+}
+function updateBadge() {
+  const b=document.getElementById('scrapBadge');
+  if (scraps.length>0){b.textContent=scraps.length;b.style.display='';}
+  else b.style.display='none';
+}
+
+// ── DRAWER ───────────────────────────────────────────
+function openDrawer() { renderDrawer(); document.getElementById('drawerOverlay').classList.add('open'); document.getElementById('scrapDrawer').classList.add('open'); }
+function closeDrawer() { document.getElementById('drawerOverlay').classList.remove('open'); document.getElementById('scrapDrawer').classList.remove('open'); }
+function renderDrawer() {
+  const body = document.getElementById('drawerBody');
+  if (!scraps.length) {
+    body.innerHTML=`<div class="drawer-empty"><div style="font-size:36px;margin-bottom:12px">📌</div><div>스크랩한 기사가 없습니다</div></div>`;
+    return;
+  }
+  body.innerHTML = `
+    <div style="font-size:11px;color:var(--text2);margin-bottom:4px">${scraps.length}개 저장됨</div>
+    ${scraps.map((item,i)=>`
+    <div class="scrap-item">
+      <div class="scrap-item-title">${esc(item.title)}</div>
+      ${item.summary?`<div class="scrap-item-summary">${esc(item.summary)}</div>`:''}
+      <div class="scrap-meta">
+        <span class="scrap-source">${esc(item.source||'')}</span>
+        <span class="scrap-date">${fmtSaved(item.savedAt)}</span>
+      </div>
+      <div class="scrap-actions">
+        <button class="sa-btn" onclick="shareScrap(${i})">공유·복사</button>
+        ${item.url?`<button class="sa-btn" onclick="goUrl2('${esc(item.url)}')">원문 보기</button>`:''}
+        <button class="sa-btn sa-del" onclick="deleteScrap(${i})">삭제</button>
+      </div>
+    </div>`).join('')}
+    <button class="clear-btn" onclick="clearScraps()">🗑️ 전체 삭제</button>`;
+}
+
+// ── UTILS ────────────────────────────────────────────
+function goUrl(idx,src){
+  const item=getItem(idx,src);
+  if (item?.url && item.url.startsWith('http')) window.open(item.url,'_blank');
+}
+function goUrl2(url){ if(url&&url.startsWith('http')) window.open(url,'_blank'); }
+function esc(s){ return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'):''; }
+function pad(n){ return String(n).padStart(2,'0'); }
+function fmt(d){ return d.toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function fmtSaved(iso){ if(!iso)return''; const d=new Date(iso); return d.toLocaleDateString('ko-KR',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+let toastTimer;
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),2600); }
+</script>
+</body>
+</html>
